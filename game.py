@@ -80,6 +80,10 @@ class Game:
 
         self.actual_frame.roll(pins)
 
+    def roll_many(self, rolls, pins):
+        for roll in range(rolls):
+            self.roll(pins)
+
     def score(self):
         self.to_string()
         game_score = 0
