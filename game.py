@@ -1,4 +1,6 @@
+from first_frame import FirstFrame
 from frame import Frame
+from last_frame import LastFrame
 
 
 class Game:
@@ -10,9 +12,14 @@ class Game:
 
     def next_frame(self) -> Frame:
         if len(self.frames) > 0:
-            self.frames.append(Frame(self.frames[-1].frame_number + 1))
+            last_frame_number = self.get_last_frame().frame_number
+            if last_frame_number == 9:
+                self.frames.append(LastFrame())
+            else:
+                self.frames.append(Frame(last_frame_number + 1))
         else:
-            self.frames.append(Frame(1))
+            self.frames.append(FirstFrame())
+
         return self.frames[-1]
 
     def to_string(self):
@@ -22,7 +29,7 @@ class Game:
             print("  Score   : ", frame.frame_score(), flush=True)
             print("  Addition: ", frame.addition, flush=True)
 
-    def get_last_frame(self) -> Frame:
+    def get_last_frame(self):
         if not self.frames or len(self.frames) < 1:
             return None
 
@@ -40,8 +47,7 @@ class Game:
 
         return None
 
-    def roll(self, pins):
-
+    def maybe_start_new_frame(self, pins) -> bool:
         if not self.actual_frame or self.actual_frame.frame_finished():
             # new frame started
             last_frame = self.get_last_finished_frame()
@@ -61,8 +67,13 @@ class Game:
                 self.double_next = True
 
             self.actual_frame = self.next_frame()
+            return True
 
-        elif self.double_next:
+        return False
+
+    def roll(self, pins):
+        new_frame_started = self.maybe_start_new_frame(pins)
+        if not new_frame_started and self.double_next:
             last_frame = self.get_last_finished_frame()
             last_frame.add_score(pins)
             self.double_next = False
