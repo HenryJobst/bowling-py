@@ -72,8 +72,9 @@ class Game:
                 self.actual_frame.frame_finished():
             self.roll(0)
 
-    def score(self):
-        self.log_to_console()
+    def score(self, debug_output=False):
+        if debug_output:
+            self.log_to_console()
         game_score = 0
         for frame in self.frames:
             game_score += frame.frame_score()
