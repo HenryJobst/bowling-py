@@ -7,3 +7,6 @@ class FirstFrame(Frame):
 
     def game_score(self):
         return self.frame_score()
+
+    def add_bonus_to_previous_frames(self):
+        pass  # there is no previous frame

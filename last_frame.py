@@ -1,4 +1,4 @@
-from frame import Frame
+from frame import Frame, MAX_PINS
 
 
 class LastFrame(Frame):
@@ -24,7 +24,13 @@ class LastFrame(Frame):
         return False
 
     def frame_finished(self):
-        return not self.third_roll_empty() or (not self.second_roll_empty() and self.frame_score() < 10)
+        if not self.third_roll_empty():
+            return True
+        if not super().is_strike() and not self.second_roll_empty() and \
+                super().frame_score() < MAX_PINS:
+            return True
+
+        return False
 
     def is_spare(self):
         return False
@@ -36,3 +42,6 @@ class LastFrame(Frame):
 
     def log_to_console_3rd(self):
         print("    3. Roll:", self.third_roll_score())
+
+    def add_bonus_to_previous_frames(self):
+        super().add_bonus_to_previous_frames()

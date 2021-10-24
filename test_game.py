@@ -16,9 +16,11 @@ def load_game_data():
 
 
 def custom_name_func(testcase_func, _param_num, param):
-    return "%s [Game data: '%s']" % (
+    return "%s for ['%s' -> %s]" % (
         testcase_func.__name__,
-        parameterized.to_safe_name(param.args[0]))
+        parameterized.to_safe_name(param.args[0]),
+        parameterized.to_safe_name(param.args[1])
+        )
 
 
 class GameTestCase(unittest.TestCase):
@@ -59,17 +61,17 @@ class GameTestCase(unittest.TestCase):
     def test_double_strike(self):
         self.game.roll_many(2, 10)  # double strike
         self.game.roll_many(16, 0)
-        self.assertEquals(40, self.game.score())
+        self.assertEquals(30, self.game.score())
 
     def test_tripple_strike(self):
         self.game.roll_many(3, 10)  # tripple strike
         self.game.roll_many(14, 0)
-        self.assertEquals(70, self.game.score())
+        self.assertEquals(60, self.game.score())
 
     def test_ten_strikes(self):
         self.game.roll_many(10, 10)
-        self.game.roll(0)
-        self.assertEquals(280, self.game.score())
+        self.game.roll_many(2, 0)
+        self.assertEquals(270, self.game.score())
 
     def test_eleven_strikes(self):
         self.game.roll_many(11, 10)
@@ -84,17 +86,22 @@ class GameTestCase(unittest.TestCase):
         self.game.roll_list([5 for _ in range(21)])
         self.assertEquals(150, self.game.score())
 
-    def test_game_data(self):
-        game_data = load_game_data()
-        for data in game_data:
-            self.game.roll_list(transform_symbols(data[0]))
-            self.assertEquals(data[1], self.game.score())
+    def test_specific_game_data(self):
+        self.game.roll_list(transform_symbols("6/XX2/2/2/4/51XXX"))
+        self.assertEquals(171, self.game.score())
 
-    #@parameterized.expand(load_game_data)
-    #def test_game_data(self, game_data):
-    #    self.game.roll_list(transform_symbols(game_data[0]))
-    #    self.assertEquals(game_data[1], self.game.score())
+    # "manual" parameterized tests
+    # def test_game_data(self):
+    #     game_data = load_game_data()
+    #     for data in game_data:
+    #         self.game = Game(data[0])
+    #         self.game.roll_list(transform_symbols(data[0]))
+    #         self.assertEquals(int(data[1]), self.game.score())
 
+    @parameterized.expand(load_game_data, testcase_func_name=custom_name_func)
+    def test_game_data(self, sequence, score):
+        self.game.roll_list(transform_symbols(sequence))
+        self.assertEquals(int(score), self.game.score())
 
 
 if __name__ == '__main__':

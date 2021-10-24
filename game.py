@@ -1,34 +1,35 @@
 from first_frame import FirstFrame
-from frame import Frame
+from frame import Frame, MAX_PINS
 from last_frame import LastFrame
 
 
 class Game:
 
-    def __init__(self):
-        self.double_next = False
+    def __init__(self, sequence=""):
+        self.sequence = sequence
         self.frames = []
         self.actual_frame = None
 
     def next_frame(self) -> Frame:
         if len(self.frames) > 0:
-            previous_frame = self.get_previous_frame()
+            previous_frame = self.get_last_frame()
             previous_frame_number = previous_frame.frame_number
             if previous_frame_number == 9:
                 self.frames.append(LastFrame(previous_frame))
             else:
-                self.frames.append(Frame(previous_frame_number + 1, previous_frame))
+                self.frames.append(
+                    Frame(previous_frame_number + 1, previous_frame))
         else:
             self.frames.append(FirstFrame())
 
         return self.frames[-1]
 
     def log_to_console(self):
-        print("\n--- Bowling-Game ---", flush=True)
+        print("\n--- Bowling-Game", self.sequence, "---")
         for frame in self.frames:
             frame.log_to_console()
 
-    def get_previous_frame(self):
+    def get_last_frame(self):
         if not self.frames or len(self.frames) < 1:
             return None
 
@@ -46,40 +47,16 @@ class Game:
 
         return None
 
-    def maybe_start_new_frame(self, pins) -> bool:
+    def start_new_frame_if_required(self):
         if not self.actual_frame or self.actual_frame.frame_finished():
-            # new frame started
-            last_frame = self.get_last_finished_frame()
-            if last_frame and last_frame.frame_cleared():
-                # double first roll for last frame clearing
-                last_frame.add_score(pins)
-                if last_frame.frame_number == 9:
-                    self.double_next = False
-                if not last_frame.is_spare() and pins == 10:
-                    if last_frame.frame_number < 9:
-                        last_frame.add_score(pins)
-                        if last_frame.frame_number < 9:
-                            self.double_next = True
-                elif not last_frame.is_spare() and last_frame.frame_number < 9:
-                    self.double_next = True
-
-            elif not self.actual_frame and pins == 10:
-                # strike on first roll
-                self.double_next = True
-
+            # need new frame -> create next frame
             self.actual_frame = self.next_frame()
-            return True
-
-        return False
 
     def roll(self, pins):
-        new_frame_started = self.maybe_start_new_frame(pins)
-        if not new_frame_started and self.double_next:
-            last_frame = self.get_last_finished_frame()
-            last_frame.add_score(pins)
-            self.double_next = False
-
+        self.start_new_frame_if_required()
         self.actual_frame.roll(pins)
+        if self.actual_frame.frame_finished():
+            self.actual_frame.add_bonus_to_previous_frames()
 
     def roll_many(self, rolls, pins):
         for roll in range(rolls):
@@ -88,6 +65,12 @@ class Game:
     def roll_list(self, rolls: [int]):
         for pins in rolls:
             self.roll(pins)
+        self.fill_game()
+
+    def fill_game(self):
+        while self.actual_frame.frame_number != 10 or not \
+                self.actual_frame.frame_finished():
+            self.roll(0)
 
     def score(self):
         self.log_to_console()
@@ -100,8 +83,10 @@ class Game:
 
 def transform_symbols(rolls_as_str: str) -> [int]:
     """
-    Idea to use this common representation and original python code by Juan L. Kehoe
-        (https://juan0001.github.io/Calculate-the-bowling-score-using-a-machine-learning-model)
+    Idea to use this common representation and original python code
+    by Juan L. Kehoe
+    (https://juan0001.github.io/Calculate-the-bowling-score-using-a-machine
+    -learning-model)
 
     Transform the rolls to scores based on the annotation of the symbols.
     Annotation of the symbols:
@@ -122,20 +107,20 @@ def transform_symbols(rolls_as_str: str) -> [int]:
     rolls: list of int
         A list of transformed rolls.
     """
-    rolls = [0 for i in range(len(rolls_as_str))]
+    rolls = [0 for _ in range(len(rolls_as_str))]
     for i in range(len(rolls_as_str)):
         # If it's 'X', it's strike. Set the score to 10.
         if rolls_as_str[i] == 'X':
-            rolls[i] = 10
+            rolls[i] = MAX_PINS
         # If it's '-', it's missed. Set the score to 0.
         elif rolls_as_str[i] == '-':
             rolls[i] = 0
         # If it's '/', it's spare, keep it for the record.
         elif rolls_as_str[i] == '/':
             if i > 0:
-                rolls[i] = 10 - rolls[i - 1]
+                rolls[i] = MAX_PINS - rolls[i - 1]
             else:
-                rolls[i] = 10
+                rolls[i] = MAX_PINS
         else:
             rolls[i] = int(rolls_as_str[i])
     return rolls
